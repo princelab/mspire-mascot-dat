@@ -7,26 +7,35 @@ module Mspire
     class Dat
       class Query < Hash
 
-        def initialize(io=nil)
-          from_string(io) if io
-        end
+        CAST = {
+          charge: :to_i,
+          title: ->(_) { CGI.unescape(_) },
+          mass_min: :to_f,
+          mass_max: :to_f,
+          int_min: :to_f,
+          int_max: :to_f,
+          num_vals: :to_i,
+          num_used1: :to_i,
+          index: :to_i,
+          Ions1: ->(_) { _.split(',').map {|pair_s| pair_s.split(':').map(&:to_f) } },
+        }
 
         # returns self
-        def from_string(io)
+        def self.from_io(io)
+          query = self.new
           while line = io.gets
             break if line[0,2] == '--'
             line.chomp!
             (key, val) = line.split('=')
-            val = 
-              case key
-              when 'title'
-                CGI.unescape(val)
-              when 'charge'
-                val.to_i
-              end
-            self[key.to_sym] = val
+            query[key.to_sym] = val
           end
-          self
+          query.each do |k,v|
+            if cast=CAST[k]
+              apply = cast.is_a?(Symbol) ? cast.to_proc : cast
+              query[k] = apply[v] if apply
+            end
+          end
+          query
         end
 
         def method_missing(*args, &block)

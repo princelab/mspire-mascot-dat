@@ -1,5 +1,6 @@
 require 'mspire/mascot/dat/index'
 require 'mspire/mascot/dat/peptide'
+require 'mspire/mascot/dat/query'
 
 module Mspire
   module Mascot
@@ -22,17 +23,23 @@ module Mspire
       end
 
       # positions io at the beginning of the section data (past the Content
-      # type and blank line). returns self
+      # type and blank line). If given an integer, interprets it as a query
+      # number. returns self
       def start_section!(name)
         @io.pos = @index[name]
         self
       end
 
-      def each_peptide(non_decoy=true, &block)
-        block or return enum_for(__method__, non_decoy)
+      def query(n)
+        start_section!(n)
+        Query.from_io(@io)
+      end
+
+      def each_peptide(non_decoy=true, top_n=Float::INFINITY, &block)
+        block or return enum_for(__method__, non_decoy, top_n)
         start_section!(non_decoy ? :peptides : :decoy_peptides)
         while peptide = Peptide.from_io(@io)
-          block.call(peptide)
+          block.call(peptide) if peptide.peptide_num <= top_n
         end
       end
 
@@ -42,9 +49,9 @@ module Mspire
       def sections
         reply = @index.byte_num.keys
         if @index.has_queries?
-          reply.push(:queries)
+          reply.push('queries')
         end
-        reply
+        reply.map(&:to_sym)
       end
 
     end
