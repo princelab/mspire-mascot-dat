@@ -13,7 +13,7 @@ describe 'Mspire::Mascot::Dat::Index being initialized from file' do
   describe Mspire::Mascot::Dat::Index do
     subject { Mspire::Mascot::Dat::Index.new(file) }
 
-    it 'can access the header start bytes' do
+    it 'can access the header start line nums' do
 
       {
         :parameters => 4,
@@ -29,8 +29,8 @@ describe 'Mspire::Mascot::Dat::Index being initialized from file' do
     end
 
     it 'can get the queries' do
-      [1,2].zip([858, 871]) do |num, byte|
-        subject.query(num).should == byte
+      [1,2].zip([858, 871]) do |num, line_num|
+        subject.query(num).should == line_num
       end
     end
 
