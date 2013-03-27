@@ -8,7 +8,6 @@ module Mspire
 
         # h49_q2 => [49, 2]; q2_p4_primary_nl => [2, 4, 'primary_nl] 
         def self.qnum_pnum(string)
-          p string
           (qns, pns, other) = string.split('_', 3)
           [ *[qns, pns].map {|ns| ns[1..-1].to_i }, other ]
         end
@@ -16,20 +15,13 @@ module Mspire
         # and reads off the next peptide hit "q1_p1=0,798.23...". Returns nil
         # if it reaches the end of the section or it is a blank line
         def self.from_io(io, proteins=false, data=false)
-          puts "WHERE ARE YOU!"
-          p io.pos
           finished = ->(line) { line.size < 2 || line[0,2] == '--' }
           line = io.readline("\n")
-          puts "FIRST LINE!!"
-          p line
           if finished[line]
             nil
           else
             (qp, core, protein_info) = line.split(/[=;]/)
             (qnum, pnum, _) = qnum_pnum(qp)
-            puts "FIRST EXAMINE"
-            p qnum
-            p pnum
             vals = core.split(',').zip(CAST).map do |val, cast| 
               case cast
               when :int then val.to_i
@@ -49,9 +41,6 @@ module Mspire
               end
               (qp, string) = line.split('=')
               (qnum, pnum, other) = qnum_pnum(qp)
-              puts "second EXAMINE"
-              p qnum
-              p pnum
               if pephit.peptide_num != pnum || pephit.query_num != qnum
                 io.pos = before
                 break

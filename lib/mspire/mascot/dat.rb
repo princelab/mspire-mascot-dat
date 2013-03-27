@@ -25,21 +25,15 @@ module Mspire
       # type and blank line). returns self
       def start_section!(name)
         @io.pos = @index[name]
-        p @io.pos
-        puts "READING:"
-        3.times { p @io.readline }
-        puts "NOW: "
-        p @io.pos
         self
       end
 
-      def each_peptide(&block)
-        start_section!(:peptides)
+      def each_peptide(non_decoy=true, &block)
+        block or return enum_for(__method__, non_decoy)
+        start_section!(non_decoy ? :peptides : :decoy_peptides)
         while peptide = Peptide.from_io(@io)
-          p peptide
           block.call(peptide)
         end
-        puts "ENDED!"
       end
 
       # returns a list of all sections as symbols. The symbol :queries is

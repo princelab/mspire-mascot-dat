@@ -3,22 +3,23 @@ require 'elif'
 module Mspire
   module Mascot
     class Dat
+      # makes a byte index (not line index) 
       class Index
 
         # the hash holding the start byte for each section (besides the
         # queries)
-        attr_accessor :line_num
+        attr_accessor :byte_num
 
         # the array holding the start byte for each query.  It is indexed by
         # query number, so the first 
-        attr_accessor :line_num_by_query_num
+        attr_accessor :query_num_to_byte
 
         # an array of the query nums
         attr_accessor :query_nums
 
         def initialize(io=nil)
-          @line_num = {}
-          @line_num_by_query_num = []
+          @byte_num = {}
+          @query_num_to_byte = []
           @query_nums = []
           from_io(io) if io
         end
@@ -29,29 +30,29 @@ module Mspire
 
         # returns self
         def from_io(io)
-          lines = []
-          Elif.open(io) do |oi|
-            oi.each_line do |line|
-              break if line =~ /^Content-Type:/
-                lines << line
+          io.rewind
+          while line=io.gets
+            io.each_line do |line|
+              if md=/^Content-Type: application\/x-Mascot; name=["'](\w+)["']/.match(line)
+                head = md[1]
+                io.gets # the newline
+                pos = io.pos
+
+                if qmd=/query(\d+)/.match(head)
+                  query_num = qmd[1].to_i
+                  @query_nums << query_num                
+                  @query_num_to_byte[query_num] = pos
+                else
+                  @byte_num[head] = pos
+                end
+              end
             end
           end
           io.rewind
 
-          lines.reverse!
-          lines.pop
-          lines.each do |line|
-            (header, line_num_s) = line.split('=')
-            if md=header.match(/^query(\d+)/)
-              query_num = md[1].to_i
-              @query_nums << query_num
-              @line_num_by_query_num[query_num] = line_num_s.to_i
-            else
-              @line_num[header] = line_num_s.to_i
-            end
-          end
-          @line_num.freeze
-          @line_num_by_query_num.freeze
+          @query_nums.freeze
+          @query_num_to_byte.freeze
+          @byte_num.freeze
           self
         end
 
@@ -60,15 +61,15 @@ module Mspire
         # query number.
         def [](key)
           if key.is_a?(Integer) 
-            @line_num_by_query_num[key]
+            @query_num_to_byte[key]
           else
-            @line_num[key.to_s]
+            @byte_num[key.to_s]
           end
         end
 
-        # raises an IndexError if the query is out of bounds
+        # nil if the query is out of bounds
         def query(n)
-          @line_num_by_query_num.fetch(n)
+          @query_num_to_byte[n]
         end
 
       end
