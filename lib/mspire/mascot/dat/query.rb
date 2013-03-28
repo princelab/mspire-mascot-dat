@@ -8,8 +8,8 @@ module Mspire
       class Query < Hash
 
         CAST = {
-          charge: ->(_) { (st[-1] << st[0...-1]).to_i },
-          title: ->(_) { CGI.unescape(_) },
+          charge: ->(st) { (st[-1] << st[0...-1]).to_i },
+          title: ->(st) { CGI.unescape(st) },
           mass_min: :to_f,
           mass_max: :to_f,
           int_min: :to_f,
@@ -17,7 +17,7 @@ module Mspire
           num_vals: :to_i,
           num_used1: :to_i,
           index: :to_i,
-          Ions1: ->(_) { _.split(',').map {|pair_s| pair_s.split(':').map(&:to_f) } },
+          Ions1: ->(st) { st.split(',').map {|pair_s| pair_s.split(':').map(&:to_f) } },
         }
 
         # returns self

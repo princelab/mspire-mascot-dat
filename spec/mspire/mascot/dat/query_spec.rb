@@ -10,7 +10,7 @@ describe 'creating a query object' do
     data = <<END
 title=1%2e2746%2e2746%2e2
 index=1
-charge=2+
+charge=2-
 mass_min=305.484440
 mass_max=1998.945430
 int_min=1.5
@@ -25,9 +25,9 @@ END
   end
 
   it 'parses' do
-    query = Mspire::Mascot::Dat::Query.new(@io)
+    query = Mspire::Mascot::Dat::Query.from_io(@io)
     query.title.should == '1.2746.2746.2'
-    query.charge.should == 2
+    query.charge.should == -2
   end
 end
 
