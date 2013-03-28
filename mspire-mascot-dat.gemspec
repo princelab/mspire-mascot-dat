@@ -27,6 +27,7 @@ Gem::Specification.new do |s|
     "lib/mspire/mascot/dat/index.rb",
     "lib/mspire/mascot/dat/peptide.rb",
     "lib/mspire/mascot/dat/query.rb",
+    "mspire-mascot-dat.gemspec",
     "spec/mspire/mascot/dat/index_spec.rb",
     "spec/mspire/mascot/dat/peptide_spec.rb",
     "spec/mspire/mascot/dat/query_spec.rb",
@@ -42,11 +43,11 @@ Gem::Specification.new do |s|
   s.homepage = "http://github.com/princelab/mspire-mascot-dat"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "2.0.0"
+  s.rubygems_version = "1.8.23"
   s.summary = "Reads mascot dat files for mspire library."
 
   if s.respond_to? :specification_version then
-    s.specification_version = 4
+    s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<elif>, ["~> 0.1.0"])
