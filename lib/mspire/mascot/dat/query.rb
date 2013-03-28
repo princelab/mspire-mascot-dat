@@ -8,7 +8,7 @@ module Mspire
       class Query < Hash
 
         CAST = {
-          charge: :to_i,
+          charge: ->(_) { (st[-1] << st[0...-1]).to_i },
           title: ->(_) { CGI.unescape(_) },
           mass_min: :to_f,
           mass_max: :to_f,
