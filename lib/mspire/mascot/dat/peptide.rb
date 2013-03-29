@@ -64,6 +64,7 @@ module Mspire
           before = io.pos
           peptide = nil
           while reply=dissect_line(io.readline("\n"))
+            p reply
             (qnum, pnum, info_tag, value) = reply
             if info_tag == ''
               block.call(peptide) if peptide # yield the previous peptide
