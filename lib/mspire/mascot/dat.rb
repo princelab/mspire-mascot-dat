@@ -18,8 +18,9 @@ module Mspire
 
       def self.open(file, &block)
         io = File.open(file)
-        block.call(self.new(io))
+        response = block.call(self.new(io))
         io.close
+        response
       end
 
       # positions io at the beginning of the section data (past the Content
