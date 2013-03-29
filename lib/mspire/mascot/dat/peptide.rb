@@ -44,7 +44,7 @@ module Mspire
         end
 
         # returns the query num and peptide num and info_tag and string.  nil if they don't exist.
-        def dissect_line(line)
+        def self.dissect_line(line)
           if md=/q(\d+)_p_?(\d+)(\w*)=(.*)/.match(line)
             [md[1].to_i, md[2].to_i, md[3], md[4]]
           end
@@ -60,38 +60,21 @@ module Mspire
         end
 
         def self.each_peptide(io, &block)
+          block or return enum_for(__method__, io)
           before = io.pos
-          peptides = []
           peptide = nil
           while reply=dissect_line(io.readline("\n"))
             (qnum, pnum, info_tag, value) = reply
-            if info_tag
-              # implement reading in future
-            else
+            if info_tag == ''
+              block.call(peptide) if peptide # yield the previous peptide
               peptide = self.from_value_string(value, qnum, pnum)
-              peptides << peptide
+            else
+              # implement reading in future
             end
-            io.pos = before
+            before = io.pos
           end
-        end
-
-        # takes an io object (positioned at the beginning of a peptide hit)
-        # and reads off the next peptide hit "q1_p1=0,798.23...". Returns nil
-        # if it reaches the end of the section or it is a blank line
-        def self.from_io(io, proteins=false, data=false)
-          raise NotImplementedError, "not reading proteins or data yet" if proteins || data
-
-          pephit = nil
-          while reply = next_qp_data(io)
-            (qnum, pnum, info_type, value) = reply
-            if info_type # extra info
-            else # the main initial entry
-              (core, protein_info) = value.split(';')
-              pephit = self.new(*core.split(','), qnum, pnum)
-              pephit.cast!
-            end
-          end
-          pephit
+          # yield that last peptide
+          block.call(peptide) if peptide
         end
       end
     end

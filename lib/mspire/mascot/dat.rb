@@ -38,7 +38,7 @@ module Mspire
       def each_peptide(non_decoy=true, top_n=Float::INFINITY, &block)
         block or return enum_for(__method__, non_decoy, top_n)
         start_section!(non_decoy ? :peptides : :decoy_peptides)
-        while peptide = Peptide.from_io(@io)
+        Mspire::Mascot::Dat::Peptide.each_peptide(@io) do |peptide|
           block.call(peptide) if peptide.peptide_num <= top_n
         end
       end
