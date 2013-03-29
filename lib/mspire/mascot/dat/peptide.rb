@@ -59,16 +59,18 @@ module Mspire
           end
         end
 
+        # returns each peptide hit.  Some queries will not have *any* hits,
+        # and these are *not* yielded.
         def self.each_peptide(io, &block)
           block or return enum_for(__method__, io)
           before = io.pos
           peptide = nil
           while reply=dissect_line(io.readline("\n"))
-            p reply
             (qnum, pnum, info_tag, value) = reply
             if info_tag == ''
               block.call(peptide) if peptide # yield the previous peptide
-              peptide = self.from_value_string(value, qnum, pnum)
+              peptide = 
+                (value == "-1") ? nil : self.from_value_string(value, qnum, pnum)
             else
               # implement reading in future
             end
