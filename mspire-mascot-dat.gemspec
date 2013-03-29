@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "mspire-mascot-dat"
-  s.version = "0.0.1"
+  s.version = "0.0.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["John T. Prince"]
-  s.date = "2013-03-28"
+  s.date = "2013-03-29"
   s.description = "Reads mascot dat files with gusto for mspire library."
   s.email = "jtprince@gmail.com"
   s.extra_rdoc_files = [
@@ -43,11 +43,11 @@ Gem::Specification.new do |s|
   s.homepage = "http://github.com/princelab/mspire-mascot-dat"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.23"
+  s.rubygems_version = "2.0.0"
   s.summary = "Reads mascot dat files for mspire library."
 
   if s.respond_to? :specification_version then
-    s.specification_version = 3
+    s.specification_version = 4
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<elif>, ["~> 0.1.0"])
