@@ -1,19 +1,12 @@
+require 'mspire/mascot/dat/cast'
 
 module Mspire
   module Mascot
     class Dat
       # mr = relative molecular mass; data contains keys of relative
       Peptide = Struct.new(:missed_cleavages, :mr, :delta, :num_ions_matched, :seq, :peaks_from_ions_1, :var_mods_string, :ions_score, :ion_series_found, :peaks_from_ions_2, :peaks_from_ions_3, :query_num, :peptide_num, :proteins, :data) do
-        CAST = {
-          missed_cleavages: :to_i, 
-          mr: :to_f, 
-          delta: :to_f, 
-          num_ions_matched: :to_i,
-          ions: :string, 
-          ions_score: :to_f, 
-          peaks_from_ions_2: :to_i,
-          peaks_from_ions_3: :to_i,
-        }
+        include Castable
+
 
         # reads the next line.  If it contains valid query information returns
         # an array [query_num, peptide_num, info_tag, value].  If it no valid
@@ -50,18 +43,10 @@ module Mspire
           end
         end
 
-        def cast!
-          self.each_pair do |k,v|
-            if cast=CAST[k]
-              apply = cast.is_a?(Symbol) ? cast.to_proc : cast
-              self[k] = apply[v] if apply
-            end
-          end
-        end
-
+   
         # returns each peptide hit.  Some queries will not have *any* hits,
         # and these are *not* yielded.
-        def self.each_peptide(io, &block)
+        def self.each(io, &block)
           return to_enum(__method__, io) unless block
           before = io.pos
           peptide = nil
@@ -84,6 +69,18 @@ module Mspire
           block.call(peptide) if peptide
           io.pos = track_pos
         end
+      end
+      class Peptide
+        CAST = {
+          missed_cleavages: :to_i, 
+          mr: :to_f, 
+          delta: :to_f, 
+          num_ions_matched: :to_i,
+          ions: :string, 
+          ions_score: :to_f, 
+          peaks_from_ions_2: :to_i,
+          peaks_from_ions_3: :to_i,
+        }
       end
     end
   end

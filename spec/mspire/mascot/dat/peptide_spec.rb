@@ -16,7 +16,7 @@ describe 'reading off the peptides' do
   end
 
   it 'has an iterator' do
-    info = Mspire::Mascot::Dat::Peptide.each_peptide(@io).map do |pep|
+    info = Mspire::Mascot::Dat::Peptide.each(@io).map do |pep|
       [pep.ions_score, pep.query_num, pep.peptide_num]
     end
     info.should == [[0.22, 1, 1], [4.11, 2, 1], [2.84, 2, 2], [2.83, 2, 3], [2.65, 2, 4], [2.28, 2, 5], [1.07, 2, 6], [0.99, 2, 7], [0.96, 2, 8], [0.65, 2, 9], [0.63, 2, 10]]

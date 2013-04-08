@@ -2,14 +2,17 @@ require 'ostruct'
 require 'delegate'
 require 'cgi'
 
+require 'mspire/mascot/dat/cast'
+
 module Mspire
   module Mascot
     class Dat
       class Query < Hash
+        include Castable
 
         CAST = {
-          charge: ->(st) { (st[-1] << st[0...-1]).to_i },
-          title: ->(st) { CGI.unescape(st) },
+          charge: Cast::FROM_CHARGE_STRING,
+          title: Cast::CGI_UNESCAPE,
           mass_min: :to_f,
           mass_max: :to_f,
           int_min: :to_f,
@@ -17,25 +20,15 @@ module Mspire
           num_vals: :to_i,
           num_used1: :to_i,
           index: :to_i,
-          Ions1: ->(st) { st.split(',').map {|pair_s| pair_s.split(':').map(&:to_f) } },
+          Ions1: Cast::FLOAT_PAIRS,
         }
 
         # returns self
-        def self.from_io(io)
-          query = self.new
-          while line = io.gets
-            break if line[0,2] == '--'
-            line.chomp!
-            (key, val) = line.split('=')
-            query[key.to_sym] = val
+        def from_io!(io)
+          Dat.each_key_val(io) do |key,val|
+            self[key.to_sym] = val
           end
-          query.each do |k,v|
-            if cast=CAST[k]
-              apply = cast.is_a?(Symbol) ? cast.to_proc : cast
-              query[k] = apply[v] if apply
-            end
-          end
-          query
+          cast!
         end
 
         def method_missing(*args, &block)

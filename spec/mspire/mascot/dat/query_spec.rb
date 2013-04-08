@@ -24,7 +24,7 @@ END
     @io = StringIO.new(data)
   end
 
-  it 'parses' do
+  specify 'Query.from_io(io) returns a query object with appropriate casts' do
     query = Mspire::Mascot::Dat::Query.from_io(@io)
     query.title.should == '1.2746.2746.2'
     query.charge.should == -2

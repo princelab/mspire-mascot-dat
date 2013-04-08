@@ -1,10 +1,39 @@
-require 'mspire/mascot/dat/index'
-require 'mspire/mascot/dat/peptide'
-require 'mspire/mascot/dat/query'
+
+%w(index peptide query parameters).each do |subsection|
+  require "mspire/mascot/dat/#{subsection}"
+end
 
 module Mspire
   module Mascot
     class Dat
+
+      # reads each line from a section until reaching the end of the section
+      def self.each_line(io, &block)
+        return to_enum(__method__, io) unless block
+        io.each_line do |line|
+          break if line[0,2] == '--'
+          block.call(line)
+        end
+      end
+
+      # returns the key and value for KEY=VAL sections
+      def self.each_key_val(io, &block)
+        return to_enum(__method__, io) unless block
+        each_line(io) do |line|
+          line.chomp!
+          (key, val) = line.split('=',2)
+          block.call( [key, (val=='' ? nil : val)] )
+        end
+      end
+
+      def self.open(file, &block)
+        io = File.open(file)
+        response = block.call(self.new(io))
+        io.close
+        response
+      end
+
+
       # the io object which is the open dat file
       attr_accessor :io
 
@@ -16,11 +45,56 @@ module Mspire
         @index = Index.new(@io)
       end
 
-      def self.open(file, &block)
-        io = File.open(file)
-        response = block.call(self.new(io))
-        io.close
-        response
+      # the univeral way to access information
+      # returns the section with appropriate cast (if available) or as a
+      # String object with the information. nil if it doesn't exist.  Also
+      # responds to :query by calling Query::each
+      def section(*args, &block)
+        # If the name exists as a class, then try to call the from_io method
+        # on the class (e.g., Parameters.from_io(io)). If the name is a
+        # plural, try the singular and the ::each method on the singular class
+        # (e.g., Peptide::each).
+        name = args.first
+        start_section!(name)
+        capitalized = name.capitalize
+        maybe_singular = 
+          case capitalized
+          when 'Queries'
+            'query'
+          else
+            capitalized[0...-1]
+          end
+        maybe_iterator = "each_#{maybe_singular.downcase}".to_sym
+        if self.respond_to?(maybe_iterator)
+          self.send(maybe_iterator, *args[1..-1], &block)
+        elsif Mspire::Mascot::Dat.const_defined?(capitalized)
+          klass = Mspire::Mascot::Dat.const_get(capitalized)
+          obj = klass.new
+          if obj.respond_to?(:from_io!)
+            case name.to_sym
+            when :parameters
+              obj.send(:from_io!, @io, false)
+            else
+              obj.send(:from_io!, @io)
+            end
+          else
+            nil
+          end
+          #elsif Mspire::Mascot::Dat.const_defined?(maybe_singular)
+          #  klass = Mspire::Mascot::Dat.const_get(maybe_singular)
+          #  klass.send(:each, @io, &block)
+        else
+          nil
+        end
+      end
+
+      def each_query(&block)
+        return to_enum(__method__) unless block
+        @index.query_nums.each do |query_num| 
+          byte = @index.query_num_to_byte[query_num]
+          @io.pos = byte
+          block.call( Mspire::Mascot::Dat::Query.new.from_io!(@io) )
+        end
       end
 
       # positions io at the beginning of the section data (past the Content
@@ -33,17 +107,35 @@ module Mspire
 
       def query(n)
         start_section!(n)
-        Query.from_io(@io)
+        Query.new.from_io!(@io)
       end
 
-      def each_peptide(non_decoy=true, top_n=Float::INFINITY, &block)
-        return to_enum(__method__, non_decoy, top_n) unless block
+      # optional parameters, passed in any order: 
+      #
+      #     top_n: [Float::INFINITY] a Numeric (top N hits)
+      #     non_decoy: [true] a Boolean 
+      #
+      # Returns the top_n hits.  If non_decoy is false or nil, returns the
+      # decoy hits.
+      #
+      #     each_peptide(false, 1) # top decoy peptide hit
+      #     each_peptide(2, true)  # top 2 peptide hits per query
+      #     each_peptide(1)        # top peptide hit per query
+      def each_peptide(*args, &block)
+        return to_enum(__method__, *args) unless block
+        (numeric, boolean) = args.partition {|arg| arg.is_a?(Numeric) }
+        top_n = numeric.first || Float::INFINITY
+        non_decoy = ((boolean.size > 0) ? boolean.first : true)
         start_section!(non_decoy ? :peptides : :decoy_peptides)
-        Mspire::Mascot::Dat::Peptide.each_peptide(@io) do |peptide|
+        Mspire::Mascot::Dat::Peptide.each(@io) do |peptide|
           if peptide.peptide_num <= top_n
             block.call(peptide) 
           end
         end
+      end
+
+      def each_decoy_peptide(top_n=Float::INFINITY, &block)
+        each_peptide(false, top_n, &block)
       end
 
       # returns a list of all sections as symbols. The symbol :queries is
