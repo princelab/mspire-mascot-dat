@@ -40,5 +40,9 @@ describe 'Mspire::Mascot::Dat::Index being initialized from file' do
       subject['peptides'].should == 41624
     end
 
+    it 'can write the index info' do
+      subject.write
+    end
+
   end
 end

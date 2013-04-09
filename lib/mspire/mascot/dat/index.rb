@@ -1,4 +1,5 @@
 require 'elif'
+require 'json'
 
 module Mspire
   module Mascot
@@ -7,7 +8,7 @@ module Mspire
       class Index
 
         # the hash holding the start byte for each section (besides the
-        # queries)
+        # queries).  Keyed by symbol.
         attr_accessor :byte_num
 
         # the array holding the start byte for each query.  It is indexed by
@@ -17,19 +18,42 @@ module Mspire
         # an array of the query nums
         attr_accessor :query_nums
 
-        def initialize(io=nil)
+        def initialize(io=nil, index_bytefile=false)
           @byte_num = {}
           @query_num_to_byte = []
           @query_nums = []
-          from_io(io) if io
+
+          if index_bytefilename
+            from_byteindex_file!(index_bytefile)
+          else
+            from_io!(arg) if arg
+          end
         end
 
         def has_queries?
           @query_nums.size > 0
         end
 
+        def from_byteindex_file!(filename)
+          hash = JSON.parse!(filename)
+          [:byte_num, :query_num_to_byte, :query_nums].each do |key|
+            self.send("#{key}=", hash[key])
+          end
+        end
+
+        def write(filename)
+          File.open(filename,'w') do |io|
+            JSON.dump(
+              {
+              byte_num: byte_num,
+              query_num_to_byte: query_num_to_byte,
+              query_nums: query_nums,
+            }, io)
+          end
+        end
+
         # returns self
-        def from_io(io)
+        def from_io!(io)
           io.rewind
           while line=io.gets
             io.each_line do |line|
@@ -43,7 +67,7 @@ module Mspire
                   @query_nums << query_num                
                   @query_num_to_byte[query_num] = pos
                 else
-                  @byte_num[head] = pos
+                  @byte_num[head.to_sym] = pos
                 end
               end
             end
@@ -63,7 +87,7 @@ module Mspire
           if key.is_a?(Integer) 
             @query_num_to_byte[key]
           else
-            @byte_num[key.to_s]
+            @byte_num[key.to_sym]
           end
         end
 

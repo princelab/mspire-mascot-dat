@@ -1,5 +1,12 @@
 
-%w(index peptide query parameters).each do |subsection|
+%w(
+  index 
+  peptide 
+  query 
+  protein
+  parameters 
+  header masses
+).each do |subsection|
   require "mspire/mascot/dat/#{subsection}"
 end
 
@@ -7,30 +14,50 @@ module Mspire
   module Mascot
     class Dat
 
-      # reads each line from a section until reaching the end of the section
-      def self.each_line(io, &block)
-        return to_enum(__method__, io) unless block
-        io.each_line do |line|
-          break if line[0,2] == '--'
-          block.call(line)
-        end
-      end
+      INDEX_EXT = '.byteindex'
 
-      # returns the key and value for KEY=VAL sections
-      def self.each_key_val(io, &block)
-        return to_enum(__method__, io) unless block
-        each_line(io) do |line|
-          line.chomp!
-          (key, val) = line.split('=',2)
-          block.call( [key, (val=='' ? nil : val)] )
-        end
-      end
+      class << self
 
-      def self.open(file, &block)
-        io = File.open(file)
-        response = block.call(self.new(io))
-        io.close
-        response
+        # reads each line from a section until reaching the end of the section
+        def each_line(io, &block)
+          return to_enum(__method__, io) unless block
+          io.each_line do |line|
+            break if line[0,2] == '--'
+            block.call(line)
+          end
+        end
+
+        # returns the key and value for KEY=VAL sections
+        def each_key_val(io, &block)
+          return to_enum(__method__, io) unless block
+          each_line(io) do |line|
+            line.chomp!
+            (key, val) = line.split('=',2)
+            block.call( [key, (val=='' ? nil : val)] )
+          end
+        end
+
+        def string(io, &block)
+          each_line(io).to_a.join
+        end
+
+        # returns the string after stripping off leading and trailing double
+        # quotation marks
+        def strip_quotes(string)
+          string.gsub(/\A"|"\Z/, '')
+        end
+        
+        def index_filename(file)
+          file + Dat::INDEX_EXT
+        end
+
+        def open(file, index_file=false, &block)
+          io = File.open(file)
+          response = block.call(self.new(io))
+          io.close
+          response
+        end
+
       end
 
 
@@ -40,9 +67,28 @@ module Mspire
       # the index object which points to the start byte for each section
       attr_accessor :index
 
-      def initialize(io)
+      # if index_file is true, will attempt to use a written index file
+      # based on naming conventions; if one doesn't yet exist it will create
+      # one for the next usage.  If handed a String, will consider it the
+      # index filename.
+      def initialize(io, index_file=false)
         @io = io
-        @index = Index.new(@io)
+        index_filename = 
+          case index_file
+          when String then index_file
+          when TrueClass then Dat.index_filename(io.path)
+          else
+            nil
+          end
+        @index = 
+          if index_filename && File.exist?(index_filename)
+            Index.from_file(index_filename)
+          else
+            Index.new(@io)
+          end
+        if index_filename && !File.exist?(index_filename)
+          @index.write(@index_filename)
+        end
       end
 
       # the univeral way to access information
@@ -54,14 +100,14 @@ module Mspire
         # on the class (e.g., Parameters.from_io(io)). If the name is a
         # plural, try the singular and the ::each method on the singular class
         # (e.g., Peptide::each).
-        name = args.first
-        start_section!(name)
-        capitalized = name.capitalize
+        name = args.first.to_sym
+        capitalized = name.to_s.capitalize
         maybe_singular = 
           case capitalized
           when 'Queries'
             'query'
           else
+            start_section!(name)
             capitalized[0...-1]
           end
         maybe_iterator = "each_#{maybe_singular.downcase}".to_sym
@@ -71,8 +117,8 @@ module Mspire
           klass = Mspire::Mascot::Dat.const_get(capitalized)
           obj = klass.new
           if obj.respond_to?(:from_io!)
-            case name.to_sym
-            when :parameters
+            case name
+            when :parameters, :masses
               obj.send(:from_io!, @io, false)
             else
               obj.send(:from_io!, @io)
@@ -83,8 +129,19 @@ module Mspire
           #elsif Mspire::Mascot::Dat.const_defined?(maybe_singular)
           #  klass = Mspire::Mascot::Dat.const_get(maybe_singular)
           #  klass.send(:each, @io, &block)
+        elsif @index.byte_num.key?(name)
+          Mspire::Mascot::Dat.string(@io)
         else
           nil
+        end
+      end
+
+      def each_protein(&block)
+        return to_enum(__method__) unless block
+        start_section!(:proteins)
+        Dat.each_key_val(@io) do |key, val|
+          (mw_s, desc) = val.split(',', 2)
+          block.call(Dat::Protein.new(Dat.strip_quotes(key), mw_s.to_f, Dat.strip_quotes(desc)))
         end
       end
 
