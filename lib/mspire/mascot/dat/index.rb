@@ -1,4 +1,3 @@
-require 'elif'
 require 'json'
 
 module Mspire

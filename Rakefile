@@ -13,7 +13,6 @@ Jeweler::Tasks.new do |gem|
   gem.description = %Q{Reads mascot dat files with gusto for mspire library.}
   gem.email = "jtprince@gmail.com"
   gem.authors = ["John T. Prince"]
-  gem.add_dependency "elif", "~> 0.1.0"
   gem.add_development_dependency "rspec", "~> 2.8.0"
   gem.add_development_dependency "rdoc", "~> 3.12"
   gem.add_development_dependency "jeweler", "~> 1.8.4"
