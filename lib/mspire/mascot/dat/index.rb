@@ -6,6 +6,14 @@ module Mspire
       # makes a byte index (not line index) 
       class Index
 
+        INDEX_EXT = '.byteindex'
+
+        class << self
+          def index_filename(file)
+            file + Dat::INDEX_EXT
+          end
+        end
+
         # the hash holding the start byte for each section (besides the
         # queries).  Keyed by symbol.
         attr_accessor :byte_num
@@ -17,27 +25,26 @@ module Mspire
         # an array of the query nums
         attr_accessor :query_nums
 
-        def initialize(io=nil, index_bytefile=false)
+
+        # if handed an index_bytefile it will open the filename and use that
+        # for the index
+        def initialize
           @byte_num = {}
           @query_num_to_byte = []
           @query_nums = []
-
-          if index_bytefilename
-            from_byteindex_file!(index_bytefile)
-          else
-            from_io!(arg) if arg
-          end
         end
 
         def has_queries?
           @query_nums.size > 0
         end
 
-        def from_byteindex_file!(filename)
+        # returns self
+        def from_byteindex!(filename)
           hash = JSON.parse!(filename)
           [:byte_num, :query_num_to_byte, :query_nums].each do |key|
             self.send("#{key}=", hash[key])
           end
+          self
         end
 
         def write(filename)
@@ -49,6 +56,10 @@ module Mspire
               query_nums: query_nums,
             }, io)
           end
+        end
+
+        def from_file!(filename)
+          File.open(filename) {|io| from_io!(io) }
         end
 
         # returns self

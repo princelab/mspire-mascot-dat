@@ -14,8 +14,6 @@ module Mspire
   module Mascot
     class Dat
 
-      INDEX_EXT = '.byteindex'
-
       class << self
 
         # reads each line from a section until reaching the end of the section
@@ -47,13 +45,10 @@ module Mspire
           string.gsub(/\A"|"\Z/, '')
         end
         
-        def index_filename(file)
-          file + Dat::INDEX_EXT
-        end
-
+      
         def open(file, index_file=false, &block)
           io = File.open(file)
-          response = block.call(self.new(io))
+          response = block.call(self.new(io, index_file))
           io.close
           response
         end
@@ -70,24 +65,25 @@ module Mspire
       # if index_file is true, will attempt to use a written index file
       # based on naming conventions; if one doesn't yet exist it will create
       # one for the next usage.  If handed a String, will consider it the
-      # index filename.
+      # index filename for reading or writing depending on whether it exists.
       def initialize(io, index_file=false)
         @io = io
         index_filename = 
           case index_file
           when String then index_file
-          when TrueClass then Dat.index_filename(io.path)
+          when TrueClass then Dat::Index.index_filename(io.path)
           else
             nil
           end
-        @index = 
-          if index_filename && File.exist?(index_filename)
-            Index.from_file(index_filename)
-          else
-            Index.new(@io)
-          end
+        @index = Index.new
+        if index_filename && File.exist?(index_filename)
+          @index.from_byteindex!(index_filename)
+        else
+          @index.from_io!(@io)
+        end
+
         if index_filename && !File.exist?(index_filename)
-          @index.write(@index_filename)
+          @index.write(index_filename)
         end
       end
 

@@ -2,16 +2,18 @@ require 'spec_helper'
 
 require 'mspire/mascot/dat/index'
 
+require 'fileutils'
+
 describe 'Mspire::Mascot::Dat::Index being initialized from file' do
 
   let(:io) { File.open(TESTFILES + "/F004128.dat") }
 
   specify '#initialize(io) creates the index object' do
-    Mspire::Mascot::Dat::Index.new(io).should be_a(Mspire::Mascot::Dat::Index)
+    Mspire::Mascot::Dat::Index.new.from_io!(io).should be_a(Mspire::Mascot::Dat::Index)
   end
 
   describe Mspire::Mascot::Dat::Index do
-    subject { Mspire::Mascot::Dat::Index.new(io) }
+    subject { Mspire::Mascot::Dat::Index.new.from_io!(io) }
 
     it 'can access the header start byte nums' do
 
@@ -40,8 +42,23 @@ describe 'Mspire::Mascot::Dat::Index being initialized from file' do
       subject['peptides'].should == 41624
     end
 
-    it 'can write the index info' do
-      subject.write
+    # creates then destroys at the end of block
+    def tmpdir(name, &block)
+    end
+
+    it 'can write the index info and set itself from the file' do
+      tmpdir = TESTFILES + "/tmp"
+      FileUtils.mkdir( tmpdir )
+
+      bytefile = tmpdir + "/index_bytefile.tmp"
+      subject.write( bytefile )
+
+      File.exist?( bytefile ).should be_true
+      File.size( bytefile ).should be > 0
+
+
+
+      FileUtils.rm_rf( tmpdir )
     end
 
   end
