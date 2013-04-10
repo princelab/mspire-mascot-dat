@@ -132,6 +132,8 @@ module Mspire
         end
       end
 
+      alias_method :[], :section
+
       def each_protein(&block)
         return to_enum(__method__) unless block
         start_section!(:proteins)
@@ -158,6 +160,7 @@ module Mspire
         self
       end
 
+      # returns query number n (these are NOT zero indexed)
       def query(n)
         start_section!(n)
         Query.new.from_io!(@io)
@@ -201,6 +204,8 @@ module Mspire
         end
         reply.map(&:to_sym)
       end
+
+      alias_method :keys, :sections
 
     end
   end

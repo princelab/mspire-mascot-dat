@@ -31,6 +31,8 @@ module Mspire
           cast!
         end
 
+        def peaks() self[:Ions1] end
+
         def method_missing(*args, &block)
           if args[0].to_s[-1] == '='
             if self.key?(args[0...-1])

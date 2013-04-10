@@ -40,10 +40,11 @@ module Mspire
 
         # returns self
         def from_byteindex!(filename)
-          hash = JSON.parse!(filename)
+          hash = JSON.parse!( IO.read(filename) )
           [:byte_num, :query_num_to_byte, :query_nums].each do |key|
-            self.send("#{key}=", hash[key])
+            self.send("#{key}=", hash[key.to_s])
           end
+          @byte_num.keys.each {|k| @byte_num[k.to_sym] = @byte_num.delete(k) }
           self
         end
 

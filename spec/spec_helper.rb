@@ -13,9 +13,13 @@ end
 
 TESTFILES = __dir__ + "/testfiles"
 
-# creates a tmpdir, then destroys at close of block
-def tmpdir(&block)
-  dir = 
-  FileUtils.mkdir( )
-
+# creates a tmpdir, passes it into the block as a full path, then destroys at
+# close of block.  Returns whatever was returned by the block.
+def spec_tmpdir(&block)
+  dir = File.expand_path(__dir__ + "/tmp")
+  FileUtils.rm_rf( dir )
+  FileUtils.mkdir( dir )
+  reply = block.call(dir)
+  FileUtils.rm_rf( dir )
+  reply
 end

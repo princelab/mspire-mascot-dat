@@ -42,23 +42,17 @@ describe 'Mspire::Mascot::Dat::Index being initialized from file' do
       subject['peptides'].should == 41624
     end
 
-    # creates then destroys at the end of block
-    def tmpdir(name, &block)
-    end
-
-    it 'can write the index info and set itself from the file' do
-      tmpdir = TESTFILES + "/tmp"
-      FileUtils.mkdir( tmpdir )
-
-      bytefile = tmpdir + "/index_bytefile.tmp"
-      subject.write( bytefile )
-
-      File.exist?( bytefile ).should be_true
-      File.size( bytefile ).should be > 0
-
-
-
-      FileUtils.rm_rf( tmpdir )
+    it 'can write the index info and create an identical object from the file' do
+      spec_tmpdir do |tmpdir|
+        bytefile = tmpdir + "/index_bytefile.tmp"
+        subject.write( bytefile )
+        File.exist?( bytefile ).should be_true
+        File.size( bytefile ).should be > 0
+        fromfile = Mspire::Mascot::Dat::Index.new.from_byteindex!( bytefile )
+        [:byte_num, :query_num_to_byte, :query_nums].each do |methd|
+          fromfile.send(methd).should == subject.send(methd)
+        end
+      end
     end
 
   end
