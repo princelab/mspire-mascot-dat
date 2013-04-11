@@ -90,8 +90,22 @@ module Mspire
       # the univeral way to access information
       # returns the section with appropriate cast (if available) or as a
       # String object with the information. nil if it doesn't exist.  Also
-      # responds to :query by calling Query::each
-      def section(*args, &block)
+      # responds to :query by calling Query::each.  An enumerator is called
+      # for enumerable objects.
+      #
+      #     dat.section(:header)  # => a Dat::Header object (hash-like)
+      #     dat.section(:peptides)  # => an Enumerator for peptides
+      #     dat.section(:peptides, 1)  # => an Enumerator for top peptides
+      #     dat[:peptides, 1].each {|peptide| ... <top peptide> }
+      #     # the equivalent each_<whatever> method:
+      #     dat.each_peptide(1) {|peptide| ... <top peptide> }
+      #
+      #     # aliased with #[] for bracket access:
+      #     dat[:header]
+      #     dat[:peptides, 1]
+      #     ...
+      #
+      def section(*args)
         # If the name exists as a class, then try to call the from_io method
         # on the class (e.g., Parameters.from_io(io)). If the name is a
         # plural, try the singular and the ::each method on the singular class
@@ -108,7 +122,7 @@ module Mspire
           end
         maybe_iterator = "each_#{maybe_singular.downcase}".to_sym
         if self.respond_to?(maybe_iterator)
-          self.send(maybe_iterator, *args[1..-1], &block)
+          self.send(maybe_iterator, *args[1..-1])
         elsif Mspire::Mascot::Dat.const_defined?(capitalized)
           klass = Mspire::Mascot::Dat.const_get(capitalized)
           obj = klass.new

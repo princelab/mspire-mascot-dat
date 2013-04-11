@@ -22,17 +22,18 @@ require 'mspire-mascot-dat'
 Mspire::Mascot::Dat.open(file.dat) do |dat|
   dat.keys # (or dat.sections) => [:parameters, :masses, ...]
   
-  dat[:peptides] do |peptide|   # yields each peptide
+  dat[:peptides].each do |peptide|
+    # or:    dat.each_peptide {|peptide| ... }
     # data is properly cast
     peptide.delta             # => a Float
     peptide.missed_cleavages  # => an Integer
   end
 
-  dat[:queries] do |query|      # yields each query
+  dat[:queries].each do |query|
     query.title   # => a String (unescaped)
   end
 
-  dat[:proteins] do |protein|   # yields each protein
+  dat[:proteins].each do |protein|
     protein.accession
   end
 
@@ -57,15 +58,16 @@ Note that no support is given for accessing the 'summary' sections because they 
 
 ### Enumerable information
 
-Sections with enumerable objects may be accessed equivalently as
-each_<whatever> or with Dat#[].  So, these are equivalent:
+Sections with enumerable objects may be accessed as each_<whatever> or with
+Dat#[], which returns an enumerable.  So, these are equivalent:
 
 ```ruby
 dat.each_peptide {|pep| ... }
-dat[:peptides] {|pep| ... }
+dat[:peptides].each {|pep| ... }
 
-# either style will return an enumerator if not give a block:
-enumerator = dat[:peptides]  # call .to_a on it to get an array
+# these also are equivalent (return an enumerator)
+enumerator = dat.each_peptide
+enumerator = dat[:peptides]
 ```
 
 Enumerators for some objects will have additional parameters that may be passed in (to either method style).  For instance, the user may retrieve the top **n** peptide hits:
@@ -81,7 +83,7 @@ awkward to access.  We treat them as if they were grouped into a single
 section.
 
 ```ruby
-dat[:queries] do |query|
+dat[:queries].each do |query|
   # hash or method access
   query[:charge] # => a positive or negative Integer
   query.charge 
@@ -100,10 +102,10 @@ dat.query(23)  # return query23
 Decoy peptides may be accessed a few different ways, all of which are equivalent:
 
 ```ruby
-dat.each_peptide(false) {|peptide| ... }
-dat[:peptides, false]   {|peptide| ... }
-dat.each_decoy_peptide  {|peptide| ... }
-dat[:decoy_peptides]    {|peptide| ... }
+dat.each_peptide(false)    {|peptide| ... }
+dat[:peptides, false].each {|peptide| ... }
+dat.each_decoy_peptide     {|peptide| ... }
+dat[:decoy_peptides].each  {|peptide| ... }
 ```
 
 ## Further Info

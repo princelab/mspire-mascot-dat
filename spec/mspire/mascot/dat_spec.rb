@@ -155,7 +155,7 @@ describe 'reading a dat file' do
 
     describe '#[:<name>] iterators' do
 
-      specify '#[:peptides] returns an enumerator (or takes a block)' do
+      specify '#[:peptides] returns an enumerator' do
         @dat[:peptides].should be_an(Enumerator)
         @dat[:peptides].map(&:peptide_num).should == [1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         @dat[:peptides].map(&:query_num).should == [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
@@ -182,15 +182,12 @@ describe 'reading a dat file' do
           ["Q23985", 82989.73, "Protein deltex OS=Drosophila melanogaster GN=dx PE=1 SV=2"]
         ]
 
-        @dat.section(:proteins) do |protein|
+        @dat[:proteins].each do |protein|
+          exp = data.shift
+          protein.accession.should == exp.shift
+          protein.mw.should == exp.shift
+          protein.description.should == exp.shift
         end
-
-        x = @dat[:proteins]
-        #  exp = data.shift
-        #  protein.accession.should == exp.shift
-        #  protein.mw.should == exp.shift
-        #  protein.description.should == exp.shift
-        #end
       end
     end
   end
