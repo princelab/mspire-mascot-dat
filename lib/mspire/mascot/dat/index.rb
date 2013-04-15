@@ -10,7 +10,7 @@ module Mspire
 
         class << self
           def index_filename(file)
-            file + Dat::INDEX_EXT
+            file + INDEX_EXT
           end
         end
 
