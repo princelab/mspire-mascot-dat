@@ -16,8 +16,16 @@ describe 'reading off the peptides' do
   end
 
   it 'has an iterator' do
+    peptides = []
     info = Mspire::Mascot::Dat::Peptide.each(@io).map do |pep|
+      peptides << pep
+      pep.protein_hits_info.should be_an(Array)
+      pep.protein_hits_info.first.should be_a(Mspire::Mascot::Dat::ProteinHitInfo)
       [pep.ions_score, pep.query_num, pep.peptide_num]
+    end
+    example_prot_info = peptides.last.protein_hits_info[2]
+    {:accession => "A1Z9D9", :frame_number => 0, :start => 246, :end => 275, :multiplicity => 1}.each do |key, expected|
+      example_prot_info.send(key).should == expected
     end
     info.should == [[0.22, 1, 1], [4.11, 2, 1], [2.84, 2, 2], [2.83, 2, 3], [2.65, 2, 4], [2.28, 2, 5], [1.07, 2, 6], [0.99, 2, 7], [0.96, 2, 8], [0.65, 2, 9], [0.63, 2, 10]]
   end

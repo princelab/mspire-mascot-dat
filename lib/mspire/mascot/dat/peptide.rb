@@ -1,12 +1,15 @@
 require 'mspire/mascot/dat/cast'
+require 'mspire/mascot/dat/protein_hit_info'
 
 module Mspire
   module Mascot
     class Dat
       # mr = relative molecular mass; data contains keys of relative
-      Peptide = Struct.new(:missed_cleavages, :mr, :delta, :num_ions_matched, :seq, :peaks_from_ions_1, :var_mods_string, :ions_score, :ion_series_found, :peaks_from_ions_2, :peaks_from_ions_3, :query_num, :peptide_num, :proteins, :data) do
+      # mr appears to be the uncharged theoretical mass of the peptide
+      # delta is probably in mr space, so mr + delta is the experimental
+      # measurement of peptide neutral mass.
+      Peptide = Struct.new(:missed_cleavages, :mr, :delta, :num_ions_matched, :seq, :peaks_from_ions_1, :var_mods_string, :ions_score, :ion_series_found, :peaks_from_ions_2, :peaks_from_ions_3, :query_num, :peptide_num, :protein_hits_info, :data) do
         include Castable
-
 
         # reads the next line.  If it contains valid query information returns
         # an array [query_num, peptide_num, info_tag, value].  If it no valid
@@ -30,8 +33,16 @@ module Mspire
         # given the value part of the initial peptide data (q1_p1=<value>),
         # sets the object's properties. returns the pephit
         def self.from_value_string(value, qnum, pnum)
-          (core, prots) = value.split(';', 2)
-          pephit = self.new(*core.split(','), qnum, pnum)
+          (core, prot_s) = value.split(';', 2)
+          #"Q5RHP9":0:535:542:1,"Q5RHP9-3":0:338:345:1
+          prot_hit_infos = prot_s.split(',').map do |data_s|
+            (accession_quoted, *int_strings) = data_s.split(':')
+            ProteinHitInfo.new(
+              Mspire::Mascot::Dat.strip_quotes(accession_quoted), 
+              *int_strings.map(&:to_i)
+            )
+          end
+          pephit = self.new(*core.split(','), qnum, pnum, prot_hit_infos)
           pephit.cast!
           pephit
         end
